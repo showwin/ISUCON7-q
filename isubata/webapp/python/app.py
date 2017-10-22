@@ -36,7 +36,7 @@ config = {
 
 
 DB_POOL = []
-for _ in range(0, 5):
+for _ in range(0, 10):
     conn = MySQLdb.connect(
         host=config['db_host'],
         port=config['db_port'],
@@ -76,11 +76,12 @@ def dbh():
 def teardownr(error):
     if hasattr(request, "db"):
         DB_POOL.append(request.db)
+        delattr(request, "db")
 
-@app.teardown_appcontext
-def teardown(error):
-    if hasattr(flask.g, "db"):
-        flask.g.db.close()
+# @app.teardown_appcontext
+# def teardown(error):
+#     if hasattr(flask.g, "db"):
+#         flask.g.db.close()
 
 
 @app.route('/initialize')
