@@ -35,8 +35,7 @@ config = {
 }
 
 
-DB_POOL = []
-for _ in range(0, 10):
+def get_new_conn():
     conn = MySQLdb.connect(
         host=config['db_host'],
         port=config['db_port'],
@@ -49,13 +48,23 @@ for _ in range(0, 10):
     )
     cur = conn.cursor()
     cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
-    DB_POOL.append(conn)
+    cur.close()
+    return conn
+
+DB_POOL = []
+for _ in range(0, 5):
+    DB_POOL.append(get_new_conn())
 
 
 def dbh():
     if hasattr(request, 'db'):
         return request.db
     request.db = DB_POOL.pop()
+    try:
+        cur = request.db.cursor()
+        cur.execute("select 1")
+    except:
+        request.db = get_new_conn()
     return request.db
     # flask.g.db = MySQLdb.connect(
     #     host   = config['db_host'],
@@ -72,6 +81,7 @@ def dbh():
     # return flask.g.db
 
 
+@app.teardown_appcontext
 @app.teardown_request
 def teardownr(error):
     if hasattr(request, "db"):
