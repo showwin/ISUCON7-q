@@ -378,7 +378,6 @@ def post_profile():
 
     display_name = flask.request.form.get('display_name')
     avatar_name = None
-    avatar_data = None
 
     if 'avatar_icon' in flask.request.files:
         file = flask.request.files['avatar_icon']
@@ -399,10 +398,11 @@ def post_profile():
                 digest = hashlib.sha1(data).hexdigest()
 
                 avatar_name = digest + ext
-                avatar_data = data
 
-    if avatar_name and avatar_data:
-        cur.execute("INSERT INTO image (name, data) VALUES (%s, _binary %s)", (avatar_name, avatar_data))
+                with open('../public/icons/{}'.format(avatar_name), 'wb') as f:
+                    f.write(data)
+
+    if avatar_name:
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
 
     if display_name:
