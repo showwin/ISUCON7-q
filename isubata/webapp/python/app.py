@@ -445,6 +445,7 @@ def post_profile():
                 with open('../public/icons/{}'.format(avatar_name), 'wb') as f:
                     f.write(data)
 
+    cur = dbh().cursor()
     if avatar_name:
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
         user['avatar_icon'] = avatar_name
