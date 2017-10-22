@@ -326,13 +326,16 @@ def get_message():
     rows = cur.fetchall()
     response = []
     for row in rows:
-        r = {}
-        r['id'] = row['id']
-        # cur.execute("SELECT name, display_name, avatar_icon FROM user WHERE id = %s", (row['user_id'],))
-        r['user'] = {'avatar_icon': row['avatar_icon'], 'display_name': row['display_name'], 'name': row['name']}
-        r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
-        r['content'] = row['content']
-        response.append(r)
+        try:
+            r = {}
+            r['id'] = row['id']
+            # cur.execute("SELECT name, display_name, avatar_icon FROM user WHERE id = %s", (row['user_id'],))
+            r['user'] = {'avatar_icon': row['avatar_icon'], 'display_name': row['display_name'], 'name': row['name']}
+            r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
+            r['content'] = row['content']
+            response.append(r)
+        except:
+            print(r)
     response.reverse()
 
     max_message_id = max(r['id'] for r in rows) if rows else 0
