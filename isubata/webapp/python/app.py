@@ -108,11 +108,13 @@ def delete_data(sql):
 
 
 def db_get_user(cur, user_id):
+    cur = dbh().cursor()
     cur.execute("SELECT * FROM user WHERE id = %s", (user_id,))
     return cur.fetchone()
 
 
 def db_add_message(cur, channel_id, user_id, content):
+    cur = dbh().cursor()
     cur.execute("INSERT INTO message (channel_id, user_id, content, created_at) VALUES (%s, %s, %s, NOW())",
                 (channel_id, user_id, content))
 
@@ -140,6 +142,7 @@ def register(cur, user, password):
     salt = random_string(20)
     pass_digest = hashlib.sha1((salt + password).encode('utf-8')).hexdigest()
     try:
+        cur = dbh().cursor()
         cur.execute(
             "INSERT INTO user (name, salt, password, display_name, avatar_icon, created_at)"
             " VALUES (%s, %s, %s, %s, %s, NOW())",
