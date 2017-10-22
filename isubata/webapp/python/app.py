@@ -55,14 +55,49 @@ def teardown(error):
 
 @app.route('/initialize')
 def get_initialize():
-    cur = dbh().cursor()
-    cur.execute("DELETE FROM user WHERE id > 1000")
-    cur.execute("DELETE FROM image WHERE id > 1001")
-    cur.execute("DELETE FROM channel WHERE id > 10")
-    cur.execute("DELETE FROM message WHERE id > 10000")
-    cur.execute("DELETE FROM haveread")
-    cur.close()
+    # cur.execute("DELETE FROM user WHERE id > 1000")
+    # cur.execute("DELETE FROM image WHERE id > 1001")
+    # cur.execute("DELETE FROM channel WHERE id > 10")
+    # cur.execute("DELETE FROM message WHERE id > 10000")
+    # cur.execute("DELETE FROM haveread")
+
+    import threading
+    init_thred_list = [
+        threading.Thread(target=delete_data, args=("DELETE FROM user WHERE id > 1000",)),
+        threading.Thread(target=delete_data, args=("DELETE FROM image WHERE id > 1001",)),
+        threading.Thread(target=delete_data, args=("DELETE FROM channel WHERE id > 10",)),
+        threading.Thread(target=delete_data, args=("DELETE FROM message WHERE id > 10000",)),
+        threading.Thread(target=delete_data, args=("truncate table haveread",)),
+    ]
+
+    for th in init_thred_list:
+        th.start()
+    for th in init_thred_list:
+        th.join()
+
     return ('', 204)
+
+def delete_data(sql):
+    """
+    delete old data
+    :param sql:
+    :return:
+    """
+
+    conn = MySQLdb.connect(
+        host=config['db_host'],
+        port=config['db_port'],
+        user=config['db_user'],
+        passwd=config['db_password'],
+        db='isubata',
+        charset='utf8mb4',
+        cursorclass=MySQLdb.cursors.DictCursor,
+        autocommit=True,
+    )
+    cur = conn.cursor()
+    cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
+    cur.execute(sql)
+    cur.close()
 
 
 def db_get_user(cur, user_id):
