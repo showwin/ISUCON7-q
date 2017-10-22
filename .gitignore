@@ -15,3 +15,4 @@ isubata/webapp/python/__pycache__/*
 local/*
 **/*/isucon7q-initial-dataset.sql.gz
 isucon7q-initial-dataset.sql.gz
+.idea/*
