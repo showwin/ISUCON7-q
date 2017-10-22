@@ -118,8 +118,6 @@ def delete_data(sql):
     cur.close()
 
 def cache_get_user(user_id=None, user_name=None):
-    print(redis_host)
-    print(user_id, user_name)
     if user_id:
         user = cache.get('user_' + str(user_id))
         if user is None:
@@ -127,7 +125,7 @@ def cache_get_user(user_id=None, user_name=None):
         return pickle.loads(user)
 
     elif user_name:
-        user = cache_get_user(user_name=user_name)
+        user = cache.get('user_name_' + str(user_name))
         if user is None:
             cur = dbh().cursor()
             cur.execute("SELECT * FROM user WHERE name = %s", (user_name,))
