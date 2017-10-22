@@ -32,19 +32,6 @@ config = {
 def dbh():
     if hasattr(request, 'db'):
         return request.db
-    #
-    # request.db = MySQLdb.connect(
-    #     host   = config['db_host'],
-    #     port   = config['db_port'],
-    #     user   = config['db_user'],
-    #     passwd = config['db_password'],
-    #     db     = 'isubata',
-    #     charset= 'utf8mb4',
-    #     cursorclass= MySQLdb.cursors.DictCursor,
-    #     autocommit = True,
-    # )
-    # cur = request.db.cursor()
-    # cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
     request.db = DB_POOL.pop()
 
     return request.db
@@ -67,7 +54,7 @@ for _ in range(0, 3):
     DB_POOL.append(conn)
 
 
-@app.teardown_appcontext
+@app.teardown_request
 def teardown(error):
     if hasattr(request, "db"):
         DB_POOL.append(request.db)
