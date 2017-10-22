@@ -396,6 +396,15 @@ def get_icon(file_name):
         return flask.Response(row['data'], mimetype=mime)
     flask.abort(404)
 
+from wsgi_lineprof.middleware import LineProfilerMiddleware
+from wsgi_lineprof.filters import FilenameFilter
+filters = [
+    FilenameFilter("/home/isucon/isubata/webapp/python/app.py"),
+]
+
+f = open("/tmp/lineprof.log", "w")
+app_prof = LineProfilerMiddleware(app, stream=f, filters=filters)
+
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True, threaded=True)
