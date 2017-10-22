@@ -9,6 +9,8 @@ import random
 import string
 import tempfile
 import time
+import redis
+import pickle
 
 
 static_folder = pathlib.Path(__file__).resolve().parent.parent / 'public'
@@ -16,6 +18,10 @@ icons_folder = static_folder / 'icons'
 app = flask.Flask(__name__, static_folder=str(static_folder), static_url_path='')
 app.secret_key = 'tonymoris'
 avatar_max_size = 1 * 1024 * 1024
+
+redis_host = os.environ.get('ISUBATA_REDIS_HOST', '192.168.101.1')
+pool = redis.ConnectionPool(host=redis_host, port=6379, db=0)
+cache = redis.StrictRedis(connection_pool=pool)
 
 if not os.path.exists(str(icons_folder)):
     os.makedirs(str(icons_folder))
@@ -62,6 +68,8 @@ def get_initialize():
     # cur.execute("DELETE FROM message WHERE id > 10000")
     # cur.execute("DELETE FROM haveread")
 
+    cache.flushall()
+
     import threading
     init_thred_list = [
         threading.Thread(target=delete_data, args=("DELETE FROM user WHERE id > 1000",)),
@@ -75,6 +83,15 @@ def get_initialize():
         th.start()
     for th in init_thred_list:
         th.join()
+
+    cur = dbh().cursor()
+    cur.execute("SELECT * FROM user")
+    users = cur.fetchall()
+
+    for user in users:
+        user_pickled = pickle.dumps(user)
+        cache.set('user_' + str(user['id']), user_pickled)
+        cache.set('user_name_' + str(user['name']), user_pickled)
 
     return ('', 204)
 
@@ -100,6 +117,22 @@ def delete_data(sql):
     cur.execute(sql)
     cur.close()
 
+def cache_get_user(user_id=None, user_name=None):
+    print(redis_host)
+    print(user_id, user_name)
+    if user_id:
+        user = cache.get('user_' + str(user_id))
+        if user is None:
+            return db_get_user(dbh().cursor(), user_id)
+        return pickle.loads(user)
+
+    elif user_name:
+        user = cache_get_user(user_name=user_name)
+        if user is None:
+            cur = dbh().cursor()
+            cur.execute("SELECT * FROM user WHERE name = %s", (user_name,))
+            return cur.fetchone()
+        return pickle.loads(user)
 
 def db_get_user(cur, user_id):
     cur.execute("SELECT * FROM user WHERE id = %s", (user_id,))
@@ -117,7 +150,7 @@ def login_required(func):
         if not "user_id" in flask.session:
             return flask.redirect('/login', 303)
         flask.request.user_id = user_id = flask.session['user_id']
-        user = db_get_user(dbh().cursor(), user_id)
+        user = cache_get_user(user_id)
         if not user:
             flask.session.pop('user_id', None)
             return flask.redirect('/login', 303)
@@ -139,7 +172,16 @@ def register(cur, user, password):
             " VALUES (%s, %s, %s, %s, %s, NOW())",
             (user, salt, pass_digest, user, "default.png"))
         cur.execute("SELECT LAST_INSERT_ID() AS last_insert_id")
-        return cur.fetchone()['last_insert_id']
+
+        last_insert_id = cur.fetchone()['last_insert_id']
+
+        cur.execute("SELECT * FROM user where name = %s", (user,))
+        user_db = cur.fetchone()
+        user_pickled = pickle.dumps(user_db)
+        cache.set('user_' + str(user_db['id']), user_pickled)
+        cache.set('user_name_' + str(user_db['name']), user_pickled)
+
+        return last_insert_id
     except MySQLdb.IntegrityError:
         flask.abort(409)
 
@@ -197,9 +239,10 @@ def get_login():
 @app.route('/login', methods=['POST'])
 def post_login():
     name = flask.request.form['name']
-    cur = dbh().cursor()
-    cur.execute("SELECT * FROM user WHERE name = %s", (name,))
-    row = cur.fetchone()
+    # cur = dbh().cursor()
+    # cur.execute("SELECT * FROM user WHERE name = %s", (name,))
+    row = cache_get_user(user_name=name)
+    # row = cur.fetchone()
     if not row or row['password'] != hashlib.sha1(
             (row['salt'] + flask.request.form['password']).encode('utf-8')).hexdigest():
         flask.abort(403)
@@ -216,7 +259,7 @@ def get_logout():
 @app.route('/message', methods=['POST'])
 def post_message():
     user_id = flask.session['user_id']
-    user = db_get_user(dbh().cursor(), user_id)
+    user = cache_get_user(user_id)
     message = flask.request.form['message']
     channel_id = int(flask.request.form['channel_id'])
     if not user or not message or not channel_id:
@@ -296,7 +339,6 @@ def get_history(channel_id):
 
     N = 20
     cur = dbh().cursor()
-    ####
     cur.execute("SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s", (channel_id,))
     cnt = int(cur.fetchone()['cnt'])
     max_page = math.ceil(cnt / N)
@@ -332,8 +374,10 @@ def get_profile(user_name):
     channels, _ = get_channel_list_info()
 
     cur = dbh().cursor()
-    cur.execute("SELECT * FROM user WHERE name = %s", (user_name,))
-    user = cur.fetchone()
+    ####
+    #cur.execute("SELECT * FROM user WHERE name = %s", (user_name,))
+    #user = cur.fetchone()
+    user = cache_get_user(user_name=user_name)
 
     if not user:
         flask.abort(404)
@@ -370,8 +414,7 @@ def post_profile():
     if not user_id:
         flask.abort(403)
 
-    cur = dbh().cursor()
-    user = db_get_user(cur, user_id)
+    user = cache_get_user(user_id)
     if not user:
         flask.abort(403)
 
@@ -403,9 +446,15 @@ def post_profile():
 
     if avatar_name:
         cur.execute("UPDATE user SET avatar_icon = %s WHERE id = %s", (avatar_name, user_id))
+        user['avatar_icon'] = avatar_name
 
     if display_name:
         cur.execute("UPDATE user SET display_name = %s WHERE id = %s", (display_name, user_id))
+        user['display_name'] = display_name
+
+    user_pickled = pickle.dumps(user)
+    cache.set('user_' + str(user['id']), user_pickled)
+    cache.set('user_name_' + str(user['name']), user_pickled)
 
     return flask.redirect('/', 303)
 
