@@ -1,1 +1,16 @@
 deploy.sh
+.cache/*
+.bundle/*
+.composer/*
+.cpanm/*
+.gem/*
+.npm/*
+.bash_history
+.xslate_cache/*
+xbuild/*
+isubata/webapp/python/__pycache__/*
+*.pyc
+.DS_Store
+.vim/
+local/*
+isubata/db/isucon7q-initial-dataset.sql.gz
