@@ -9,7 +9,6 @@ import random
 import string
 import tempfile
 import time
-from flask import request
 
 
 static_folder = pathlib.Path(__file__).resolve().parent.parent / 'public'
@@ -30,34 +29,29 @@ config = {
 
 
 def dbh():
-    if hasattr(request, 'db'):
-        return request.db
-    request.db = DB_POOL.pop()
+    if hasattr(flask.g, 'db'):
+        return flask.g.db
 
-    return request.db
-
-
-DB_POOL = []
-for _ in range(0, 3):
-    conn = MySQLdb.connect(
-        host=config['db_host'],
-        port=config['db_port'],
-        user=config['db_user'],
-        passwd=config['db_password'],
-        db='isubata',
-        charset='utf8mb4',
-        cursorclass=MySQLdb.cursors.DictCursor,
-        autocommit=True,
+    flask.g.db = MySQLdb.connect(
+        host   = config['db_host'],
+        port   = config['db_port'],
+        user   = config['db_user'],
+        passwd = config['db_password'],
+        db     = 'isubata',
+        charset= 'utf8mb4',
+        cursorclass= MySQLdb.cursors.DictCursor,
+        autocommit = True,
     )
-    cur = conn.cursor()
+    cur = flask.g.db.cursor()
     cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
-    DB_POOL.append(conn)
+    return flask.g.db
 
 
-@app.teardown_request
+
+@app.teardown_appcontext
 def teardown(error):
-    if hasattr(request, "db"):
-        DB_POOL.append(request.db)
+    if hasattr(flask.g, "db"):
+        flask.g.db.close()
 
 
 @app.route('/initialize')
@@ -108,13 +102,11 @@ def delete_data(sql):
 
 
 def db_get_user(cur, user_id):
-    cur = dbh().cursor()
     cur.execute("SELECT * FROM user WHERE id = %s", (user_id,))
     return cur.fetchone()
 
 
 def db_add_message(cur, channel_id, user_id, content):
-    cur = dbh().cursor()
     cur.execute("INSERT INTO message (channel_id, user_id, content, created_at) VALUES (%s, %s, %s, NOW())",
                 (channel_id, user_id, content))
 
@@ -142,7 +134,6 @@ def register(cur, user, password):
     salt = random_string(20)
     pass_digest = hashlib.sha1((salt + password).encode('utf-8')).hexdigest()
     try:
-        cur = dbh().cursor()
         cur.execute(
             "INSERT INTO user (name, salt, password, display_name, avatar_icon, created_at)"
             " VALUES (%s, %s, %s, %s, %s, NOW())",
@@ -453,3 +444,4 @@ app_prof = LineProfilerMiddleware(app, stream=f, filters=filters)
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True, threaded=True)
+
