@@ -135,6 +135,8 @@ def get_initialize():
     for message_count in message_counts:
         cache.set('message_count_' + str(message_count['channel_id']), message_count['cnt'])
 
+    cache.set('channel_count', 10)
+
     return ('', 204)
 
 def delete_data(sql):
@@ -349,13 +351,16 @@ def fetch_unread():
     if not user_id:
         flask.abort(403)
 
-    cur = dbh().cursor()
-    cur.execute('SELECT id FROM channel')
-    rows = cur.fetchall()
-    channel_ids = [row['id'] for row in rows]
+    #cur = dbh().cursor()
+    #cur.execute('SELECT id FROM channel')
+    #rows = cur.fetchall()
+    #channel_ids = [row['id'] for row in rows]
+
+    max_channel_id = cache.get('channel_count')
 
     res = []
-    for channel_id in channel_ids:
+    for channel_id in range(int(max_channel_id)):
+        channel_id += 1
         #cur.execute('SELECT * FROM haveread WHERE user_id = %s AND channel_id = %s', (user_id, channel_id))
         #row = cur.fetchone()
         max_message_id = cache.get('user_' + str(user_id) + 'channel_' + str(channel_id))
@@ -450,6 +455,8 @@ def post_add_channel():
     cur.execute("INSERT INTO channel (name, description, updated_at, created_at) VALUES (%s, %s, NOW(), NOW())",
                 (name, description))
     channel_id = cur.lastrowid
+
+    cache.incr('channel_count')
     return flask.redirect('/channel/' + str(channel_id), 303)
 
 
