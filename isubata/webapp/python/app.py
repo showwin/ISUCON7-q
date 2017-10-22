@@ -122,6 +122,7 @@ def get_initialize():
         th.join()
 
     cur = dbh().cursor()
+    cur.execute("alter table channel AUTO_INCREMENT = 11")
     cur.execute("SELECT * FROM user")
     users = cur.fetchall()
 
