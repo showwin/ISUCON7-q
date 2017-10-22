@@ -85,9 +85,11 @@ def dbh():
 @app.teardown_appcontext
 @app.teardown_request
 def teardownr(error):
-    if hasattr(request, "db"):
-        DB_POOL.append(request.db)
-        delattr(request, "db")
+    try:
+        if hasattr(request, "db"):
+            DB_POOL.append(request.db)
+            delattr(request, "db")
+    except: pass
 
 # @app.teardown_appcontext
 # def teardown(error):
