@@ -352,7 +352,7 @@ def fetch_unread():
     if not user_id:
         flask.abort(403)
 
-    #cur = dbh().cursor()
+    cur = dbh().cursor()
     #cur.execute('SELECT id FROM channel')
     #rows = cur.fetchall()
     #channel_ids = [row['id'] for row in rows]
