@@ -19,7 +19,7 @@ app = flask.Flask(__name__, static_folder=str(static_folder), static_url_path=''
 app.secret_key = 'tonymoris'
 avatar_max_size = 1 * 1024 * 1024
 
-redis_host = os.environ.get('ISUBATA_REDIS_HOST', 'localhost')
+redis_host = os.environ.get('ISUBATA_REDIS_HOST', '192.168.101.1')
 pool = redis.ConnectionPool(host=redis_host, port=6379, db=0)
 cache = redis.StrictRedis(connection_pool=pool)
 
@@ -117,12 +117,26 @@ def delete_data(sql):
     cur.execute(sql)
     cur.close()
 
+def cache_get_user(user_id=None, user_name=None):
+    print(redis_host)
+    print(user_id, user_name)
+    if user_id:
+        user = cache.get('user_' + str(user_id))
+        if user is None:
+            return db_get_user(dbh().cursor(), user_id)
+        return pickle.loads(user)
+
+    elif user_name:
+        user = cache_get_user(user_name=user_name)
+        if user is None:
+            cur = dbh().cursor()
+            cur.execute("SELECT * FROM user WHERE name = %s", (user_name,))
+            return cur.fetchone()
+        return pickle.loads(user)
 
 def db_get_user(cur, user_id):
-    ####
-    # cur.execute("SELECT * FROM user WHERE id = %s", (user_id,))
-    # return cur.fetchone()
-    return pickle.loads(cache.get('user_' + str(user_id)))
+    cur.execute("SELECT * FROM user WHERE id = %s", (user_id,))
+    return cur.fetchone()
 
 
 def db_add_message(cur, channel_id, user, content):
@@ -136,7 +150,7 @@ def login_required(func):
         if not "user_id" in flask.session:
             return flask.redirect('/login', 303)
         flask.request.user_id = user_id = flask.session['user_id']
-        user = db_get_user(dbh().cursor(), user_id)
+        user = cache_get_user(user_id)
         if not user:
             flask.session.pop('user_id', None)
             return flask.redirect('/login', 303)
@@ -225,9 +239,9 @@ def get_login():
 @app.route('/login', methods=['POST'])
 def post_login():
     name = flask.request.form['name']
-    cur = dbh().cursor()
+    # cur = dbh().cursor()
     # cur.execute("SELECT * FROM user WHERE name = %s", (name,))
-    row = pickle.loads(cache.get('user_name_' + str(name)))
+    row = cache_get_user(user_name=name)
     # row = cur.fetchone()
     if not row or row['password'] != hashlib.sha1(
             (row['salt'] + flask.request.form['password']).encode('utf-8')).hexdigest():
@@ -245,7 +259,7 @@ def get_logout():
 @app.route('/message', methods=['POST'])
 def post_message():
     user_id = flask.session['user_id']
-    user = db_get_user(dbh().cursor(), user_id)
+    user = cache_get_user(user_id)
     message = flask.request.form['message']
     channel_id = int(flask.request.form['channel_id'])
     if not user or not message or not channel_id:
@@ -363,7 +377,7 @@ def get_profile(user_name):
     ####
     #cur.execute("SELECT * FROM user WHERE name = %s", (user_name,))
     #user = cur.fetchone()
-    user = pickle.loads(cache.get('user_name_' + str(user_name)))
+    user = cache_get_user(user_name=user_name)
 
     if not user:
         flask.abort(404)
@@ -400,8 +414,7 @@ def post_profile():
     if not user_id:
         flask.abort(403)
 
-    cur = dbh().cursor()
-    user = db_get_user(cur, user_id)
+    user = cache_get_user(user_id)
     if not user:
         flask.abort(403)
 
