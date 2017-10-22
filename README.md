@@ -26,6 +26,14 @@
 ## 注意事項
 * `DEPLOY_BRANCH` とCIで実行しているブランチ名が同じ時のみデプロイされる。つまり`DEPLOY_BRANCH=master`のときには master ブランチにpushされたときのみデプロイ処理が走る
 
+# SSH鍵でSSHできるようにする
+```
+$ cd ~/.ssh
+$ vi authorized_keys
+# isucon.pub を貼り付け
+$ chmod 644 authorized_keys
+```
+
 # サーバ内でgit pullできるようにする
 
 ```
