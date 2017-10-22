@@ -55,3 +55,15 @@ name = "stylesheets"
 [[bundle]]
 regexp = '^(GET|HEAD) /images/'
 name = "images"
+
+[[bundle]]
+regexp = '^(GET|HEAD) /icons/'
+name = "icons"
+
+[[bundle]]
+regexp = '^(GET|HEAD) /fonts/'
+name = "js"
+
+[[bundle]]
+regexp = '^(GET|HEAD) /css/'
+name = "css"
