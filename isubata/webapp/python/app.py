@@ -19,7 +19,8 @@ app = flask.Flask(__name__, static_folder=str(static_folder), static_url_path=''
 app.secret_key = 'tonymoris'
 avatar_max_size = 1 * 1024 * 1024
 
-pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
+redis_host = os.environ.get('ISUBATA_REDIS_HOST', 'localhost')
+pool = redis.ConnectionPool(host=redis_host, port=6379, db=0)
 cache = redis.StrictRedis(connection_pool=pool)
 
 if not os.path.exists(str(icons_folder)):
