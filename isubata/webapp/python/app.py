@@ -113,7 +113,6 @@ def get_initialize():
         threading.Thread(target=delete_data, args=("DELETE FROM image WHERE id > 1001",)),
         threading.Thread(target=delete_data, args=("DELETE FROM channel WHERE id > 10",)),
         threading.Thread(target=delete_data, args=("DELETE FROM message WHERE id > 10000",)),
-        threading.Thread(target=delete_data, args=("truncate table haveread",)),
     ]
 
     for th in init_thred_list:
@@ -335,10 +334,10 @@ def get_message():
     response.reverse()
 
     max_message_id = max(r['id'] for r in rows) if rows else 0
-    cur.execute('INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at)'
-                ' VALUES (%s, %s, %s, NOW(), NOW())'
-                ' ON DUPLICATE KEY UPDATE message_id = %s, updated_at = NOW()',
-                (user_id, channel_id, max_message_id, max_message_id))
+    #cur.execute('INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at)'
+    #            ' VALUES (%s, %s, %s, NOW(), NOW())'
+    #            ' ON DUPLICATE KEY UPDATE message_id = %s, updated_at = NOW()',
+    #            (user_id, channel_id, max_message_id, max_message_id))
 
     cache.set('user_' + str(user_id) + 'channel_' + str(channel_id), max_message_id)
 
