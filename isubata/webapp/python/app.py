@@ -106,9 +106,9 @@ def db_get_user(cur, user_id):
     return cur.fetchone()
 
 
-def db_add_message(cur, channel_id, user_id, content):
-    cur.execute("INSERT INTO message (channel_id, user_id, content, created_at) VALUES (%s, %s, %s, NOW())",
-                (channel_id, user_id, content))
+def db_add_message(cur, channel_id, user, content):
+    cur.execute("INSERT INTO message (channel_id, user_id, content, created_at, name, avatar_icon, display_name) VALUES (%s, %s, %s, NOW(), %s, %s, %s)",
+                (channel_id, user['id'], content, user['name'], user['avatar_icon'], user['display_name']))
 
 
 def login_required(func):
@@ -221,7 +221,7 @@ def post_message():
     channel_id = int(flask.request.form['channel_id'])
     if not user or not message or not channel_id:
         flask.abort(403)
-    db_add_message(dbh().cursor(), channel_id, user_id, message)
+    db_add_message(dbh().cursor(), channel_id, user, message)
     return ('', 204)
 
 
@@ -241,8 +241,8 @@ def get_message():
     for row in rows:
         r = {}
         r['id'] = row['id']
-        cur.execute("SELECT name, display_name, avatar_icon FROM user WHERE id = %s", (row['user_id'],))
-        r['user'] = cur.fetchone()
+        # cur.execute("SELECT name, display_name, avatar_icon FROM user WHERE id = %s", (row['user_id'],))
+        r['user'] = {'avatar_icon': row['avatar_icon'], 'display_name': row['display_name'], 'name': row['name']}
         r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
         r['content'] = row['content']
         response.append(r)
@@ -296,6 +296,7 @@ def get_history(channel_id):
 
     N = 20
     cur = dbh().cursor()
+    ####
     cur.execute("SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s", (channel_id,))
     cnt = int(cur.fetchone()['cnt'])
     max_page = math.ceil(cnt / N)
@@ -312,8 +313,8 @@ def get_history(channel_id):
     for row in rows:
         r = {}
         r['id'] = row['id']
-        cur.execute("SELECT name, display_name, avatar_icon FROM user WHERE id = %s", (row['user_id'],))
-        r['user'] = cur.fetchone()
+        # cur.execute("SELECT name, display_name, avatar_icon FROM user WHERE id = %s", (row['user_id'],))
+        r['user'] = {'avatar_icon': row['avatar_icon'], 'display_name': row['display_name'], 'name': row['name']}
         r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
         r['content'] = row['content']
         messages.append(r)
@@ -442,4 +443,3 @@ app_prof = LineProfilerMiddleware(app, stream=f, filters=filters)
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True, threaded=True)
-
