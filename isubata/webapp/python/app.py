@@ -471,16 +471,16 @@ def ext2mime(ext):
     return ''
 
 
-@app.route('/icons/<file_name>')
-def get_icon(file_name):
-    cur = dbh().cursor()
-    cur.execute("SELECT * FROM image WHERE name = %s", (file_name,))
-    row = cur.fetchone()
-    ext = os.path.splitext(file_name)[1] if '.' in file_name else ''
-    mime = ext2mime(ext)
-    if row and mime:
-        return flask.Response(row['data'], mimetype=mime)
-    flask.abort(404)
+# @app.route('/icons/<file_name>')
+# def get_icon(file_name):
+#     cur = dbh().cursor()
+#     cur.execute("SELECT * FROM image WHERE name = %s", (file_name,))
+#     row = cur.fetchone()
+#     ext = os.path.splitext(file_name)[1] if '.' in file_name else ''
+#     mime = ext2mime(ext)
+#     if row and mime:
+#         return flask.Response(row['data'], mimetype=mime)
+#     flask.abort(404)
 
 from wsgi_lineprof.middleware import LineProfilerMiddleware
 from wsgi_lineprof.filters import FilenameFilter
