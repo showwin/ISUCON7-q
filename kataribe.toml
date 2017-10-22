@@ -67,3 +67,11 @@ name = "js"
 [[bundle]]
 regexp = '^(GET|HEAD) /css/'
 name = "css"
+
+[[bundle]]
+regexp = '^(GET|HEAD) /js/'
+name = "js"
+
+[[bundle]]
+regexp = '^(GET|HEAD) /channel/[0-9]+\b'
+name = "GET /channel/:ID"

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+sudo chmod 666 /tmp/slow.log
+sudo chmod 666 /tmp/access.log
+
 hms=`date +"%H%M%S"`
 mkdir /tmp/profiles/$hms
 pt-query-digest /tmp/slow.log > /tmp/profiles/$hms/mysql_log.txt

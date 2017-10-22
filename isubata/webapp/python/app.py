@@ -93,6 +93,12 @@ def get_initialize():
         cache.set('user_' + str(user['id']), user_pickled)
         cache.set('user_name_' + str(user['name']), user_pickled)
 
+    cur.execute("SELECT count(*) AS cnt, channel_id FROM message GROUP BY channel_id;")
+    message_counts = cur.fetchall()
+
+    for message_count in message_counts:
+        cache.set('message_count_' + str(message_count['channel_id']), message_count['cnt'])
+
     return ('', 204)
 
 def delete_data(sql):
@@ -140,6 +146,7 @@ def db_get_user(cur, user_id):
 def db_add_message(cur, channel_id, user, content):
     cur.execute("INSERT INTO message (channel_id, user_id, content, created_at, name, avatar_icon, display_name) VALUES (%s, %s, %s, NOW(), %s, %s, %s)",
                 (channel_id, user['id'], content, user['name'], user['avatar_icon'], user['display_name']))
+    cache.incr('message_count_' + str(channel_id))
 
 
 def login_required(func):
@@ -157,12 +164,12 @@ def login_required(func):
     return wrapper
 
 
-def random_string(n):
-    return ''.join([random.choice(string.ascii_letters + string.digits) for i in range(n)])
+#def random_string(n):
+#    return ''.join([random.choice(string.ascii_letters + string.digits) for i in range(n)])
 
 
 def register(cur, user, password):
-    salt = random_string(20)
+    salt = 'abc'
     pass_digest = hashlib.sha1((salt + password).encode('utf-8')).hexdigest()
     try:
         cur.execute(
@@ -316,14 +323,16 @@ def fetch_unread():
         #cur.execute('SELECT * FROM haveread WHERE user_id = %s AND channel_id = %s', (user_id, channel_id))
         #row = cur.fetchone()
         max_message_id = cache.get('user_' + str(user_id) + 'channel_' + str(channel_id))
+        r = {}
         if max_message_id:
             cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s AND %s < id',
                         (channel_id, max_message_id))
+            r['unread'] = int(cur.fetchone()['cnt'])
         else:
-            cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s', (channel_id,))
-        r = {}
+            #cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s', (channel_id,))
+            r['unread'] = cache.get('message_count_' + str(channel_id))
+
         r['channel_id'] = channel_id
-        r['unread'] = int(cur.fetchone()['cnt'])
         res.append(r)
     return flask.jsonify(res)
 
