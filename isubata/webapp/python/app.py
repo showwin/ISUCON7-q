@@ -9,7 +9,6 @@ import random
 import string
 import tempfile
 import time
-from flask import request
 
 
 static_folder = pathlib.Path(__file__).resolve().parent.parent / 'public'
@@ -30,47 +29,29 @@ config = {
 
 
 def dbh():
-    if hasattr(request, 'db'):
-        return request.db
-    #
-    # request.db = MySQLdb.connect(
-    #     host   = config['db_host'],
-    #     port   = config['db_port'],
-    #     user   = config['db_user'],
-    #     passwd = config['db_password'],
-    #     db     = 'isubata',
-    #     charset= 'utf8mb4',
-    #     cursorclass= MySQLdb.cursors.DictCursor,
-    #     autocommit = True,
-    # )
-    # cur = request.db.cursor()
-    # cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
-    request.db = DB_POOL.pop()
+    if hasattr(flask.g, 'db'):
+        return flask.g.db
 
-    return request.db
-
-
-DB_POOL = []
-for _ in range(0, 3):
-    conn = MySQLdb.connect(
-        host=config['db_host'],
-        port=config['db_port'],
-        user=config['db_user'],
-        passwd=config['db_password'],
-        db='isubata',
-        charset='utf8mb4',
-        cursorclass=MySQLdb.cursors.DictCursor,
-        autocommit=True,
+    flask.g.db = MySQLdb.connect(
+        host   = config['db_host'],
+        port   = config['db_port'],
+        user   = config['db_user'],
+        passwd = config['db_password'],
+        db     = 'isubata',
+        charset= 'utf8mb4',
+        cursorclass= MySQLdb.cursors.DictCursor,
+        autocommit = True,
     )
-    cur = conn.cursor()
+    cur = flask.g.db.cursor()
     cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
-    DB_POOL.append(conn)
+    return flask.g.db
+
 
 
 @app.teardown_appcontext
 def teardown(error):
-    if hasattr(request, "db"):
-        DB_POOL.append(request.db)
+    if hasattr(flask.g, "db"):
+        flask.g.db.close()
 
 
 @app.route('/initialize')
@@ -461,3 +442,4 @@ app_prof = LineProfilerMiddleware(app, stream=f, filters=filters)
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True, threaded=True)
+
