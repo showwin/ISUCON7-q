@@ -13,5 +13,5 @@ isubata/webapp/python/__pycache__/*
 .DS_Store
 .vim/
 local/*
-isubata/db/isucon7q-initial-dataset.sql.gz
-.idea/*
+**/*/isucon7q-initial-dataset.sql.gz
+isucon7q-initial-dataset.sql.gz
