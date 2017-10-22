@@ -330,7 +330,7 @@ def fetch_unread():
             r['unread'] = int(cur.fetchone()['cnt'])
         else:
             #cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s', (channel_id,))
-            r['unread'] = int(cache.get('message_count_' + str(channel_id)))
+            r['unread'] = int(cache.get('message_count_' + str(channel_id)) or 0)
 
         r['channel_id'] = channel_id
         res.append(r)
