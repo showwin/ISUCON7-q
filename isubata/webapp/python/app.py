@@ -357,7 +357,7 @@ def fetch_unread():
     #rows = cur.fetchall()
     #channel_ids = [row['id'] for row in rows]
 
-    max_channel_id = cache.get('channel_count')
+    max_channel_id = cache.get('channel_count') or 10
 
     res = []
     for channel_id in range(int(max_channel_id)):
