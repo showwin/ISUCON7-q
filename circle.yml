@@ -1,0 +1,32 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: alpine:latest
+
+    steps:
+      - checkout
+      - deploy:
+          name: Deploy
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "${DEPLOY_BRANCH}" ]; then
+              apk update
+              apk add openssh
+              chmod 400 /root/project/ssh_key
+
+              echo "
+                cd '$DEPLOY_DIR' && \
+                git pull origin '${DEPLOY_BRANCH}' && \
+                touch deploy.sh && sh deploy.sh
+              " > script.sh
+
+              IP_LIST=$(echo $IPS | tr "," "\n")
+              for ip in $IP_LIST
+              do
+                echo "Deploy to ${ip}"
+                ssh -oStrictHostKeyChecking=no -i /root/project/ssh_key $SSH_USER@$ip 'bash -s' < script.sh
+              done
+            else
+              echo "NOT deploy to ${DEPLOY_BRANCH}"
+            fi
