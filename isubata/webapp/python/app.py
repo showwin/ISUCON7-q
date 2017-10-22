@@ -47,6 +47,7 @@ def dbh():
     return flask.g.db
 
 
+
 @app.teardown_appcontext
 def teardown(error):
     if hasattr(flask.g, "db"):
