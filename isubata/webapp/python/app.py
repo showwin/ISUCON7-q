@@ -47,6 +47,7 @@ def dbh():
     return flask.g.db
 
 
+
 @app.teardown_appcontext
 def teardown(error):
     if hasattr(flask.g, "db"):
@@ -83,7 +84,19 @@ def delete_data(sql):
     :param sql:
     :return:
     """
-    cur = dbh().cursor()
+
+    conn = MySQLdb.connect(
+        host=config['db_host'],
+        port=config['db_port'],
+        user=config['db_user'],
+        passwd=config['db_password'],
+        db='isubata',
+        charset='utf8mb4',
+        cursorclass=MySQLdb.cursors.DictCursor,
+        autocommit=True,
+    )
+    cur = conn.cursor()
+    cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
     cur.execute(sql)
     cur.close()
 
@@ -431,3 +444,4 @@ app_prof = LineProfilerMiddleware(app, stream=f, filters=filters)
 
 if __name__ == "__main__":
     app.run(port=8080, debug=True, threaded=True)
+
