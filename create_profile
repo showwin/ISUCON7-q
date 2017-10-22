@@ -1,0 +1,8 @@
+#!/bin/sh
+
+hms=`date +"%H%M%S"`
+mkdir /tmp/profiles/$hms
+pt-query-digest /tmp/slow.log > /tmp/profiles/$hms/mysql_log.txt
+cat /tmp/access.log | kataribe > /tmp/profiles/$hms/nginx_log.txt
+echo '' > /tmp/slow.log
+echo '' > /tmp/access.log

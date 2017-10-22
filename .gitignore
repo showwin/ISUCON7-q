@@ -16,3 +16,6 @@ local/*
 **/*/isucon7q-initial-dataset.sql.gz
 isucon7q-initial-dataset.sql.gz
 .idea/*
+.ssh/*
+.viminfo
+showwin
