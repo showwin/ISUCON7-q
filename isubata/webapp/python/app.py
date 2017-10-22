@@ -1,5 +1,6 @@
 import MySQLdb.cursors
 import flask
+from flask import request
 import functools
 import hashlib
 import math
@@ -34,25 +35,47 @@ config = {
 }
 
 
-def dbh():
-    if hasattr(flask.g, 'db'):
-        return flask.g.db
-
-    flask.g.db = MySQLdb.connect(
-        host   = config['db_host'],
-        port   = config['db_port'],
-        user   = config['db_user'],
-        passwd = config['db_password'],
-        db     = 'isubata',
-        charset= 'utf8mb4',
-        cursorclass= MySQLdb.cursors.DictCursor,
-        autocommit = True,
+DB_POOL = []
+for _ in range(0, 5):
+    conn = MySQLdb.connect(
+        host=config['db_host'],
+        port=config['db_port'],
+        user=config['db_user'],
+        passwd=config['db_password'],
+        db='isubata',
+        charset='utf8mb4',
+        cursorclass=MySQLdb.cursors.DictCursor,
+        autocommit=True,
     )
-    cur = flask.g.db.cursor()
+    cur = conn.cursor()
     cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
-    return flask.g.db
+    DB_POOL.append(conn)
 
 
+def dbh():
+    if hasattr(request, 'db'):
+        return request.db
+    request.db = DB_POOL.pop()
+    return request.db
+    # flask.g.db = MySQLdb.connect(
+    #     host   = config['db_host'],
+    #     port   = config['db_port'],
+    #     user   = config['db_user'],
+    #     passwd = config['db_password'],
+    #     db     = 'isubata',
+    #     charset= 'utf8mb4',
+    #     cursorclass= MySQLdb.cursors.DictCursor,
+    #     autocommit = True,
+    # )
+    # cur = flask.g.db.cursor()
+    # cur.execute("SET SESSION sql_mode='TRADITIONAL,NO_AUTO_VALUE_ON_ZERO,ONLY_FULL_GROUP_BY'")
+    # return flask.g.db
+
+
+@app.teardown_request
+def teardownr(error):
+    if hasattr(request, "db"):
+        DB_POOL.append(request.db)
 
 @app.teardown_appcontext
 def teardown(error):
