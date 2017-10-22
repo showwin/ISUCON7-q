@@ -297,6 +297,8 @@ def get_message():
                 ' ON DUPLICATE KEY UPDATE message_id = %s, updated_at = NOW()',
                 (user_id, channel_id, max_message_id, max_message_id))
 
+    cache.set('user_' + str(user_id) + 'channel_' + str(channel_id), max_message_id)
+
     return flask.jsonify(response)
 
 
@@ -313,11 +315,12 @@ def fetch_unread():
 
     res = []
     for channel_id in channel_ids:
-        cur.execute('SELECT * FROM haveread WHERE user_id = %s AND channel_id = %s', (user_id, channel_id))
-        row = cur.fetchone()
-        if row:
+        #cur.execute('SELECT * FROM haveread WHERE user_id = %s AND channel_id = %s', (user_id, channel_id))
+        #row = cur.fetchone()
+        max_message_id = cache.get('user_' + str(user_id) + 'channel_' + str(channel_id))
+        if max_message_id:
             cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s AND %s < id',
-                        (channel_id, row['message_id']))
+                        (channel_id, max_message_id))
         else:
             cur.execute('SELECT COUNT(*) as cnt FROM message WHERE channel_id = %s', (channel_id,))
         r = {}
