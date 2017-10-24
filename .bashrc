@@ -118,3 +118,5 @@ fi
 
 
 export PATH=/home/isucon/local/python/bin:$PATH
+export PATH=$HOME/local/go/bin:$HOME/go/bin:$PATH
+export ISUBATA_DB_HOST=isu3
