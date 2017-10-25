@@ -1,18 +1,21 @@
-import MySQLdb.cursors
-import flask
-from flask import request
 import functools
 import hashlib
 import math
 import os
 import pathlib
+import pickle
 import random
 import string
 import tempfile
 import time
-import redis
-import pickle
 
+import MySQLdb.cursors
+import redis
+
+import flask
+from flask import request
+from wsgi_lineprof.filters import FilenameFilter
+from wsgi_lineprof.middleware import LineProfilerMiddleware
 
 static_folder = pathlib.Path(__file__).resolve().parent.parent / 'public'
 icons_folder = static_folder / 'icons'
@@ -20,7 +23,7 @@ app = flask.Flask(__name__, static_folder=str(static_folder), static_url_path=''
 app.secret_key = 'tonymoris'
 avatar_max_size = 1 * 1024 * 1024
 
-redis_host = os.environ.get('ISUBATA_REDIS_HOST', '192.168.101.1')
+redis_host = os.environ.get('ISUBATA_REDIS_HOST', '10.240.0.3')
 pool = redis.ConnectionPool(host=redis_host, port=6379, db=0)
 cache = redis.StrictRedis(connection_pool=pool)
 
@@ -538,8 +541,6 @@ def ext2mime(ext):
 #         return flask.Response(row['data'], mimetype=mime)
 #     flask.abort(404)
 
-from wsgi_lineprof.middleware import LineProfilerMiddleware
-from wsgi_lineprof.filters import FilenameFilter
 filters = [
     FilenameFilter("/home/isucon/isubata/webapp/python/app.py"),
 ]
