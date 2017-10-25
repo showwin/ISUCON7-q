@@ -55,7 +55,7 @@ def get_new_conn():
     return conn
 
 DB_POOL = []
-for _ in range(0, 5):
+for _ in range(0, 30):
     DB_POOL.append(get_new_conn())
 
 
@@ -247,7 +247,7 @@ def get_channel_list_info(focus_channel_id=None):
     description = ""
 
     for c in channels:
-        if c['id'] == focus_channel_id:
+        if c.get('id', 0) == focus_channel_id:
             description = c['description']
             break
 
