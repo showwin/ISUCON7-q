@@ -4,3 +4,4 @@ mysqlclient
 gunicorn
 wsgi_lineprof
 redis
+uwsgi
