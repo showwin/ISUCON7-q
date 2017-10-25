@@ -341,7 +341,7 @@ def get_message():
             print(r)
     response.reverse()
 
-    max_message_id = max(r['id'] for r in rows) if rows else 0
+    max_message_id = max(r.get('id', 0) for r in rows) if rows else 0
     #cur.execute('INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at)'
     #            ' VALUES (%s, %s, %s, NOW(), NOW())'
     #            ' ON DUPLICATE KEY UPDATE message_id = %s, updated_at = NOW()',
